@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Products - HisabPro{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary"><i class="fas fa-boxes me-2"></i>Products</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+        <i class="fas fa-plus me-1"></i> Add Product
+    </button>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table id="productsTable" class="table table-hover table-bordered" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Cost Price</th>
+                    <th>Selling Price</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form id="addForm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label>Cost</label>
+                            <input type="number" class="form-control" name="cost_price" required>
+                        </div>
+                        <div class="col">
+                            <label>Selling</label>
+                            <input type="number" class="form-control" name="selling_price" required>
+                        </div>
+                    </div>
+                    <div class="mb-3 mt-3">
+                        <label>Stock</label>
+                        <input type="number" class="form-control" name="stock_quantity" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form id="editForm">
+            <input type="hidden" name="id">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label>Cost</label>
+                            <input type="number" class="form-control" name="cost_price" required>
+                        </div>
+                        <div class="col">
+                            <label>Selling</label>
+                            <input type="number" class="form-control" name="selling_price" required>
+                        </div>
+                    </div>
+                    <div class="mb-3 mt-3">
+                        <label>Stock</label>
+                        <input type="number" class="form-control" name="stock_quantity" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let table;
+
+    $(document).ready(function () {
+        loadTable();
+
+        // Add Product
+        $('#addForm').submit(function (e) {
+            e.preventDefault();
+            const data = {
+                name: $(this).find('[name="name"]').val(),
+                cost_price: Number($(this).find('[name="cost_price"]').val()),
+                selling_price: Number($(this).find('[name="selling_price"]').val()),
+                stock_quantity: Number($(this).find('[name="stock_quantity"]').val())
+            };
+
+            $.ajax({
+                url: '/inventory/',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function () {
+                    $('#addProductModal').modal('hide');
+                    $('#addForm')[0].reset();
+                    Swal.fire('Success', 'Product added', 'success');
+                    loadTable();
+                }
+            });
+        });
+
+        // Edit Product Submit
+        $('#editForm').submit(function (e) {
+            e.preventDefault();
+            const id = $(this).find('[name="id"]').val();
+            const data = {
+                name: $(this).find('[name="name"]').val(),
+                cost_price: Number($(this).find('[name="cost_price"]').val()),
+                selling_price: Number($(this).find('[name="selling_price"]').val()),
+                stock_quantity: Number($(this).find('[name="stock_quantity"]').val())
+            };
+
+            $.ajax({
+                url: `/inventory/${id}`,
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function () {
+                    $('#editProductModal').modal('hide');
+                    Swal.fire('Success', 'Product updated', 'success');
+                    loadTable();
+                }
+            });
+        });
+    });
+
+    function loadTable() {
+        if ($.fn.DataTable.isDataTable('#productsTable')) {
+            $('#productsTable').DataTable().destroy();
+        }
+
+        $.get('/inventory/', function (data) {
+            const rows = data.map(p => `
+            <tr>
+                <td>${p.name}</td>
+                <td>Rp ${p.cost_price}</td>
+                <td>Rp ${p.selling_price}</td>
+                <td>${p.stock_quantity}</td>
+                <td>
+                    <button onclick='openEdit(${JSON.stringify(p)})' class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
+                    <button onclick="deleteProduct(${p.id})" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `);
+            $('#productsTable tbody').html(rows.join(''));
+            $('#productsTable').DataTable();
+        });
+    }
+
+    function openEdit(product) {
+        const form = $('#editForm');
+        form.find('[name="id"]').val(product.id);
+        form.find('[name="name"]').val(product.name);
+        form.find('[name="cost_price"]').val(product.cost_price);
+        form.find('[name="selling_price"]').val(product.selling_price);
+        form.find('[name="stock_quantity"]').val(product.stock_quantity);
+        $('#editProductModal').modal('show');
+    }
+
+    function deleteProduct(id) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/inventory/${id}`,
+                    method: 'DELETE',
+                    success: function () {
+                        Swal.fire('Deleted!', 'Product has been deleted.', 'success');
+                        loadTable();
+                    }
+                });
+            }
+        });
+    }
+</script>
+{% endblock %}

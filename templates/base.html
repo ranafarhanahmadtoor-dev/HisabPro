@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HisabPro{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #6181e0;
+            /* Royal Blue */
+            --secondary-color: #f8f9fa;
+            /* Light Gray */
+            --text-color: #333;
+        }
+
+        body {
+            background-color: var(--secondary-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background-color: var(--primary-color) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand,
+        .nav-link {
+            color: white !important;
+            font-weight: 600;
+        }
+
+        .nav-link:hover {
+            color: #f0f0f0 !important;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #6ebcdb;
+            border-color: #6ebcdb;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/dashboard"><i class="fas fa-store me-2"></i>HisabPro</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" id="navLinks">
+                    <!-- Links will be handled by JS based on auth state if needing strict SPA feel, 
+                         but for Jinja, we usually assume logged in for internal pages -->
+                    <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/products_page">Products</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/sales_page">Sales</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="logout()">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // Global Auth Check
+        const token = localStorage.getItem('access_token');
+        if (!token && window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
+            window.location.href = '/login';
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = '/login';
+        }
+
+        // Add Bearer token to all AJAX requests
+        $.ajaxSetup({
+            beforeSend: function (xhr) {
+                if (token) {
+                    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status === 401) {
+                    logout();
+                }
+            }
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

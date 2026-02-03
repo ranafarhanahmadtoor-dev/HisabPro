@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Sales - HisabPro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Record Sale Form -->
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">Record New Sale</div>
+            <div class="card-body">
+                <form id="saleForm">
+                    <div class="mb-3">
+                        <label>Product</label>
+                        <select class="form-select" name="product_id" required id="productSelect">
+                            <option value="">Select Product...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Quantity</label>
+                        <input type="number" class="form-control" name="quantity" min="1" required>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Confirmed Sale</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales List -->
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header">Recent Sales History</div>
+            <div class="card-body">
+                <table id="salesTable" class="table table-striped table-hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Qty</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function () {
+        loadProducts();
+        loadSales();
+
+        $('#saleForm').submit(function (e) {
+            e.preventDefault();
+            const data = {
+                product_id: Number($('#productSelect').val()),
+                quantity: Number($('input[name="quantity"]').val())
+            };
+
+            $.ajax({
+                url: '/sales/',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function () {
+                    Swal.fire('Success', 'Sale recorded!', 'success');
+                    $('#saleForm')[0].reset();
+                    loadSales();
+                },
+                error: function (xhr) {
+                    Swal.fire('Error', xhr.responseJSON.detail || 'Sale failed', 'error');
+                }
+            });
+        });
+    });
+
+    function loadProducts() {
+        $.get('/inventory/', function (data) {
+            const opts = data.map(p => `<option value="${p.id}">${p.name} (Stock: ${p.stock_quantity})</option>`);
+            $('#productSelect').append(opts.join(''));
+        });
+    }
+
+    function loadSales() {
+        if ($.fn.DataTable.isDataTable('#salesTable')) {
+            $('#salesTable').DataTable().destroy();
+        }
+
+        $.get('/sales/', function (data) {
+            const rows = data.map(s => `
+            <tr>
+                <td>${new Date(s.date).toLocaleString()}</td>
+                <td>${s.product_name}</td>
+                <td>${s.quantity_sold}</td>
+                <td>Rp ${s.total_amount}</td>
+            </tr>
+        `);
+            $('#salesTable tbody').html(rows.join(''));
+            $('#salesTable').DataTable({
+                order: [[0, 'desc']]
+            });
+        });
+    }
+</script>
+{% endblock %}

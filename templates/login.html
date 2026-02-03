@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Login - HisabPro{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4 text-primary" id="formTitle">Login</h3>
+
+                <form id="authForm">
+                    <div class="mb-3" id="nameField" style="display: none;">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" name="name">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" required>
+                    </div>
+
+                    <div class="mb-3" id="phoneField" style="display: none;">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" name="phone">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" id="submitBtn">Login</button>
+
+                    <div class="text-center mt-3">
+                        <a href="#" id="toggleMode">Don't have an account? Sign up</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let isLogin = true;
+
+    $('#toggleMode').click(function (e) {
+        e.preventDefault();
+        isLogin = !isLogin;
+        if (isLogin) {
+            $('#formTitle').text('Login');
+            $('#submitBtn').text('Login');
+            $('#toggleMode').text("Don't have an account? Sign up");
+            $('#nameField, #phoneField').slideUp();
+            $('input[name="name"], input[name="phone"]').removeAttr('required');
+        } else {
+            $('#formTitle').text('Sign Up');
+            $('#submitBtn').text('Sign Up');
+            $('#toggleMode').text("Already have an account? Login");
+            $('#nameField, #phoneField').slideDown();
+            $('input[name="name"], input[name="phone"]').attr('required', true);
+        }
+    });
+
+    $('#authForm').submit(function (e) {
+        e.preventDefault();
+        const formData = {
+            email: $('input[name="email"]').val(),
+            password: $('input[name="password"]').val()
+        };
+
+        if (isLogin) {
+            // Login (FormData for OAuth2)
+            $.ajax({
+                url: '/token',
+                method: 'POST',
+                data: {
+                    username: formData.email,
+                    password: formData.password
+                },
+                success: function (response) {
+                    localStorage.setItem('access_token', response.access_token);
+                    window.location.href = '/dashboard';
+                },
+                error: function (xhr) {
+                    Swal.fire('Error', xhr.responseJSON.detail || 'Login failed', 'error');
+                }
+            });
+        } else {
+            // Register (JSON)
+            formData.name = $('input[name="name"]').val();
+            formData.phone = $('input[name="phone"]').val();
+
+            $.ajax({
+                url: '/register',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function () {
+                    Swal.fire('Success', 'Account created! Please login.', 'success')
+                        .then(() => $('#toggleMode').click());
+                },
+                error: function (xhr) {
+                    Swal.fire('Error', xhr.responseJSON.detail || 'Registration failed', 'error');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

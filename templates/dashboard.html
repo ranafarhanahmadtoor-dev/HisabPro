@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - HisabPro{% endblock %}
+
+{% block content %}
+<h2 class="mb-4 text-primary"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+
+<!-- KPIs -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Revenue</h5>
+                <h2 id="totalRevenue">Rp 0</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Net Profit</h5>
+                <h2 id="netProfit">Rp 0</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-danger text-white shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Cost</h5>
+                <h2 id="totalCost">Rp 0</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <i class="fas fa-chart-line me-2"></i>Daily Performance
+            </div>
+            <div class="card-body">
+                <canvas id="dailyChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <i class="fas fa-chart-pie me-2"></i>Product Mix
+            </div>
+            <div class="card-body">
+                <canvas id="productChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow text-center p-4">
+            <i class="fas fa-box fa-3x text-info mb-3"></i>
+            <h4>Manage Inventory</h4>
+            <a href="/products_page" class="btn btn-outline-info">Go to Products</a>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow text-center p-4">
+            <i class="fas fa-cash-register fa-3x text-success mb-3"></i>
+            <h4>Record Sales</h4>
+            <a href="/sales_page" class="btn btn-outline-success">Go to Sales</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function () {
+        // Load Total P&L
+        $.get('/reports/pnl', function (data) {
+            $('#totalRevenue').text(`Rp ${data.revenue.toLocaleString()}`);
+            $('#netProfit').text(`Rp ${data.profit.toLocaleString()}`);
+            $('#totalCost').text(`Rp ${data.cost.toLocaleString()}`);
+        });
+
+        // Load Daily Chart
+        $.get('/reports/daily', function (data) {
+            const labels = data.map(d => d.date);
+            const revenues = data.map(d => d.revenue);
+            const profits = data.map(d => d.profit);
+
+            new Chart(document.getElementById('dailyChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Revenue', data: revenues, borderColor: '#87CEEB', tension: 0.1 },
+                        { label: 'Profit', data: profits, borderColor: '#198754', tension: 0.1 }
+                    ]
+                }
+            });
+        });
+
+        // Load Product Sales for Pie Chart (via Sales API)
+        $.get('/sales/', function (sales) {
+            const productSales = {};
+            sales.forEach(s => {
+                productSales[s.product_name] = (productSales[s.product_name] || 0) + s.quantity_sold;
+            });
+
+            new Chart(document.getElementById('productChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(productSales),
+                    datasets: [{
+                        data: Object.values(productSales),
+                        backgroundColor: ['#87CEEB', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                    }]
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
