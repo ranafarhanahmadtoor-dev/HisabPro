@@ -5,11 +5,17 @@ services:
     buildCommand: "./start.sh"
     startCommand: "gunicorn app.main:app -k uvicorn.workers.UvicornWorker"
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hisabpro-db
+          property: connectionString
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: DATABASE_URL
-        value: sqlite:///./sales_manager.db
       - key: SECRET_KEY
         generateValue: true
       - key: WEB_CONCURRENCY
         value: 2
+
+databases:
+  - name: hisabpro-db
+    plan: free
